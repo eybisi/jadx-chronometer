@@ -41,44 +41,14 @@ public class JadxChronometer implements JadxPlugin {
 	@Override
 	public void init(JadxPluginContext context) {
 		context.registerOptions(options);
+
 		if (options.isEnable()) {
 			JadxGuiContext jgc = context.getGuiContext();
 			if (jgc != null) {
 				JFrame frame = jgc.getMainFrame();
-				Path cacheDir = getCacheDirReflectively(frame);
-				Path timerFile = cacheDir.resolve("chronometer");
-				// Try to read chronometer file
-				Long wastedTime = 0L;
-				if (timerFile.toFile().exists()) {
-					String content;
-					try {
-						content = Files.readString(timerFile);
-						wastedTime = Long.parseLong(content);
-					} catch (IOException e) {
-						LOG.error("Failed to read timer file", e);
-					}
 
-				} else {
-					try {
-						Files.createFile(timerFile);
-						Files.writeString(timerFile, "0");
-					} catch (IOException e) {
-						LOG.error("Failed to create timer file", e);
-					}
-				}
+				JPanel jMainPanel = getMainPanelReflectively(frame);
 
-				Object mainPanel = null;
-				try {
-					Field field = frame.getClass().getDeclaredField("mainPanel");
-					field.setAccessible(true);
-					mainPanel = field.get(frame);
-				} catch (Exception e) {
-					LOG.error("Failed to get mainPanel", e);
-				}
-				if (mainPanel == null) {
-					return;
-				}
-				JPanel jMainPanel = (JPanel) mainPanel;
 				// https://github.com/skylot/jadx/blob/a43b3282ef94255f611f66f3f8f0e68306f2cfb0/jadx-gui/src/main/java/jadx/gui/ui/MainWindow.java#L1241
 				// 0 - mainPanel = new JPanel(new BorderLayout());
 				// 1 - mainPanel.add(treeSplitPane);
@@ -97,6 +67,9 @@ public class JadxChronometer implements JadxPlugin {
 				timeLabel.setFont(font);
 				secondComp.add(timeLabel); // Add the label to the toolbar
 
+				Path cacheDir = getCacheDirReflectively(frame);
+				Path timerFile = cacheDir.resolve("chronometer");
+				Long wastedTime = getWastedTime(timerFile);
 				// Subtract the wasted time from the current time
 				final Long finalWastedTime = wastedTime;
 				Date currTime = new Date();
@@ -136,7 +109,68 @@ public class JadxChronometer implements JadxPlugin {
 				});
 				frame.addWindowListener(listeners[0]);
 			}
+		} else {
+			// LOG.info("Chronometer is disabled");
+			JadxGuiContext jgc = context.getGuiContext();
+			if (jgc != null) {
+				JFrame frame = jgc.getMainFrame();
+				JPanel jMainPanel = getMainPanelReflectively(frame);
+				JToolBar secondComp = (JToolBar) jMainPanel.getComponent(2);
+				removeChronometer(secondComp);
+			}
 		}
+	}
+
+	public Long getWastedTime(Path timerFile) {
+		// Try to read chronometer file
+		Long wastedTime = 0L;
+		if (timerFile.toFile().exists()) {
+			String content;
+			try {
+				content = Files.readString(timerFile);
+				wastedTime = Long.parseLong(content);
+			} catch (IOException e) {
+				LOG.error("Failed to read timer file", e);
+			}
+
+		} else {
+			try {
+				Files.createFile(timerFile);
+				Files.writeString(timerFile, "0");
+			} catch (IOException e) {
+				LOG.error("Failed to create timer file", e);
+			}
+		}
+		return wastedTime;
+	}
+
+	public void removeChronometer(JToolBar comp) {
+		int count = comp.getComponentCount();
+		if (count == 31) {
+			// This is ok
+			return;
+		}
+		if (count > 31) {
+			// LOG.info("Removing chronometer");
+			comp.remove(count - 1);
+			comp.remove(count - 2);
+		}
+	}
+
+	public JPanel getMainPanelReflectively(JFrame frame) {
+		Object mainPanel = null;
+		try {
+			Field field = frame.getClass().getDeclaredField("mainPanel");
+			field.setAccessible(true);
+			mainPanel = field.get(frame);
+		} catch (Exception e) {
+			LOG.error("Failed to get mainPanel", e);
+		}
+		if (mainPanel == null) {
+			return null;
+		}
+		JPanel jMainPanel = (JPanel) mainPanel;
+		return jMainPanel;
 	}
 
 	public Path getCacheDirReflectively(JFrame mainWindow) {
