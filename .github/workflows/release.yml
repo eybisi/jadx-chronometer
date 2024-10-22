@@ -44,3 +44,5 @@ jobs:
           asset_path: build/libs/jadx-chronometer-dev.jar
           asset_name: jadx-chronometer.jar
           asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
