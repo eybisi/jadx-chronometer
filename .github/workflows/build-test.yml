@@ -21,5 +21,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build
-        run: ./gradlew build dist
+      - name: Build plugin JAR
+        run: ./gradlew shadowJar
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jadx-type-diagram-plugin
+          path: ./build/libs/*.jar
