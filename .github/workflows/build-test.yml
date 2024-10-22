@@ -27,5 +27,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: jadx-type-diagram-plugin
+          name: jadx-chronometer
           path: ./build/libs/*.jar
