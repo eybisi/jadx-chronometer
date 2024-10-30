@@ -132,13 +132,18 @@ public class JadxChronometer implements JadxPlugin {
 			} catch (IOException e) {
 				LOG.error("Failed to read timer file", e);
 			}
-
 		} else {
 			try {
+				// Create parent directories if they don't exist
+				Files.createDirectories(timerFile.getParent());
 				Files.createFile(timerFile);
-				Files.writeString(timerFile, "0");
 			} catch (IOException e) {
 				LOG.error("Failed to create timer file", e);
+			}
+			try {
+				Files.writeString(timerFile, "0");
+			} catch (IOException e) {
+				LOG.error("Failed to write timer file", e);
 			}
 		}
 		return wastedTime;
